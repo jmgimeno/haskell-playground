@@ -109,3 +109,20 @@ lastR x = case viewR x of SnocR _ a -> a
 
 initR :: FingerTree a -> FingerTree a
 initR x = case viewR x of SnocR x' _ -> x'
+
+app3 :: FingerTree a -> [a] -> FingerTree a -> FingerTree a
+app3 Empty ts xs = ts <<| xs
+app3 xs ts Empty = xs |>> ts
+app3 (Single x) ts xs = x <| (ts <<| xs)
+app3 xs ts (Single x) = (xs |>> ts) |> x
+app3 (Deep pr1 m1 sf1) ts (Deep pr2 m2 sf2)
+  = Deep pr1 (app3 m1 (nodes (sf1 ++ ts ++ pr2)) m2) sf2
+
+nodes :: [a] -> [Node a]
+nodes [a,b]      = [Node2 a b]
+nodes [a,b,c]    = [Node3 a b c]
+nodes [a,b,c,d]  = [Node2 a b, Node2 c d]
+nodes (a:b:c:xs) = Node3 a b c : nodes xs
+
+(|><|) :: FingerTree a -> FingerTree a -> FingerTree a
+xs |><| ys = app3 xs [] ys
