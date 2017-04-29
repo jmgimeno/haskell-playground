@@ -14,9 +14,10 @@ instance Reduce [] where
   reducel (>) z x = foldl (>) z x
 
 toList :: (Reduce f) => f a -> [a]
-toList s = reducer (:) s []
+toList s = s ^: [] where (^:) = reducer (:)
 
-data Node a = Node2 a a | Node3 a a a
+data Node a = Node2 a a
+            | Node3 a a a
   deriving Show
 
 data FingerTree a = Empty
@@ -27,22 +28,24 @@ data FingerTree a = Empty
 type Digit a = [a]
 
 instance Reduce Node where
-  reducer (>) (Node2 a b)   z = a > (b > z)
-  reducer (>) (Node3 a b c) z = a > (b > (c > z))
-  reducel (<) z (Node2 b a)   = (z < b) < a
-  reducel (<) z (Node3 c b a) = ((z < c) < b) < a
+  reducer (<) (Node2 a b)   z = a < (b < z)
+  reducer (<) (Node3 a b c) z = a < (b < (c < z))
+
+  reducel (>) z (Node2 b a)   = (z > b) > a
+  reducel (>) z (Node3 c b a) = ((z > c) > b) > a
 
 instance Reduce FingerTree where
-  reducer (>) Empty          z = z
-  reducer (>) (Single x)     z = x > z
-  reducer (>) (Deep pr m sf) z = pr >> (m >>> (sf >> z))
-    where (>>)  = reducer (>)
-          (>>>) = reducer (reducer (>))
-  reducel (<) z Empty          = z
-  reducel (<) z (Single x)     = z < x
-  reducel (<) z (Deep pr m sf) = ((z << pr) <<< m) << sf
-    where (<<)  = reducel (<)
-          (<<<) = reducel (reducel (<))
+  reducer (<) Empty          z = z
+  reducer (<) (Single x)     z = x < z
+  reducer (<) (Deep pr m sf) z = pr <^ (m <^^ (sf <^ z))
+    where (<^)  = reducer (<)
+          (<^^) = reducer (reducer (<))
+
+  reducel (>) z Empty          = z
+  reducel (>) z (Single x)     = z > x
+  reducel (>) z (Deep pr m sf) = ((z >^ pr) >^^ m) >^ sf
+    where (>^)  = reducel (>)
+          (>^^) = reducel (reducel (>))
 
 infixr 5 <|
 (<|) :: a -> FingerTree a -> FingerTree a
@@ -51,21 +54,21 @@ a <| Single b            = Deep [a] Empty [b]
 a <| Deep [b,c,d,e] m sf = Deep [a,b] (Node3 c d e <| m) sf
 a <| Deep pr m sf        = Deep ([a] ++ pr) m sf
 
-infixr 5 |>
+infixl 5 |>
 (|>) :: FingerTree a -> a -> FingerTree a
 Empty               |> a = Single a
 Single b            |> a = Deep [b] Empty [a]
 Deep pr m [e,d,c,b] |> a = Deep pr (m |> Node3 e d c) [b,a]
 Deep pr m sf        |> a = Deep pr m (sf ++ [a])
 
-(<<|) :: (Reduce f) => f a -> FingerTree a -> FingerTree a
-(<<|) = reducer (<|)
+(<|^) :: (Reduce f) => f a -> FingerTree a -> FingerTree a
+(<|^) = reducer (<|)
 
-(|>>) :: (Reduce f) => FingerTree a -> f a -> FingerTree a
-(|>>) = reducel (|>)
+(|>^) :: (Reduce f) => FingerTree a -> f a -> FingerTree a
+(|>^) = reducel (|>)
 
 toTree :: (Reduce f) => f a -> FingerTree a
-toTree s = s <<| Empty
+toTree s = s <|^ Empty
 
 data ViewL s a = NilL | ConsL a (s a)
 
@@ -111,10 +114,10 @@ initR :: FingerTree a -> FingerTree a
 initR x = case viewR x of SnocR x' _ -> x'
 
 app3 :: FingerTree a -> [a] -> FingerTree a -> FingerTree a
-app3 Empty ts xs = ts <<| xs
-app3 xs ts Empty = xs |>> ts
-app3 (Single x) ts xs = x <| (ts <<| xs)
-app3 xs ts (Single x) = (xs |>> ts) |> x
+app3 Empty ts xs = ts <|^ xs
+app3 xs ts Empty = xs |>^ ts
+app3 (Single x) ts xs = x <| (ts <|^ xs)
+app3 xs ts (Single x) = (xs |>^ ts) |> x
 app3 (Deep pr1 m1 sf1) ts (Deep pr2 m2 sf2)
   = Deep pr1 (app3 m1 (nodes (sf1 ++ ts ++ pr2)) m2) sf2
 
