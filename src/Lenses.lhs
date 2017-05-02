@@ -226,3 +226,131 @@ Which is a lot more efficient than the get/set idea we hold before
 
 Same again... using a lens to view
 ==================================
+
+type Lens' s a = forall f . Functor f
+                        => (a -> f a) -> s -> f s
+data LensR s a = L { viewR :: s -> a
+                   , setR  :: a -> s -> s }
+
+view :: Lens' s a -> (s -> a)
+view ln s = ...      ln returns a value of type (f s)
+                     but we want a value of type a
+
+                     This looks harder !!!
+
+* The trick is to pack de a inside the f !!!
+
+* (Const v) is a functor that ignores its argument a
+
+> newtype Const v a = Const v
+
+> getConst :: Const v a -> v
+> getConst (Const x) = x
+
+> instance Functor (Const v) where
+>   fmap _ (Const x) = Const x
+
+view :: Lens' s a -> (s -> a)
+view ln s
+  = getConst (ln Const s)
+
+* Here Const is, deduced by the type inferencer, a -> Const a a
+
+* Or, as Edward would write it:
+
+> view :: Lens' s a -> s -> a
+> view ln = getConst . ln Const
+
+From Lens to LensR
+==================
+
+type Lens' s a = forall f. Functor f
+                        => (a -> f a) -> (s -> f s)
+data LensR s a = L { viewR :: s -> a
+                   , setR  :: a -> s -> s }
+
+view :: Lens' s a -> (s -> a)
+view ln = getComst . ln Const
+
+set :: Lens' s a -> (a -> s -> s)
+view ln x = getId . ln (Identity . const x)
+
+> lensToLensR :: Lens' s a -> LensR s a
+> LensToLensR ln = L { viewR = view ln, setR = set ln }
+
+Exercise
+========
+
+* Write lensRToLens
+
+> lensRToLens :: LensR s a -> Lens' s a
+> lensRToLens = undefined
+
+Let's create a Lens
+===================
+
+type Lens' s a = forall f. Functor f
+                        => (a -> f a) -> (s -> f s)
+
+> data Person = P { _name :: String, _salary :: Int }
+
+> name :: Lens' Person String
+> -- name :: Functor f => (String -> f String)
+> --                    -> Person -> f Person
+
+> name elt_fn (P n s)
+>   = fmap (\n' -> P n' s) (elt_fn n)
+
+* elt_fn
+  - String -> f String
+  - element function
+
+* \n' -> P n' s
+  - String -> Person
+  - It's like a data structure with a hole in it
+  - It's the function that replaces the name of the given Person
+
+* elt_fn n
+  - f String
+
+* fmap is needed to go from f String to f Person given String -> Person
+
+* I can express it using <$> from Data.Functor
+
+name elt_fn (P n s)
+  = (\n' -> P n' s) <$> (elt_fn n)
+
+Using lens
+==========
+
+ghci> let fred = P { _name = "Fred", _salary = 100 }
+
+ghci> view name fred
+"Fred"
+
+ghci> set name "Bill" fred
+P { _name = "Bill", _salary = 100 }
+
+How on earth does this work?
+============================
+
+view name (P { _name = "Fred", _salary = 100 })
+  -- inline view
+= getConst (name Const (P { _name = "Fred", _salary = 100 }))
+  -- inline name
+= getConst (fmap (\n' -> P n' 100) (Const "Fred"))
+  -- fmap over Const
+= getConst (Const ("Fred"))
+  -- getConst
+= "Fred"
+
+* The newtype has no runtime cost
+
+* I just tell the "Functor f =>" which functor dictionary to pass to ln
+
+* The place where the fmap threw away the function was precisely where the
+wrapper (the reconstruction function) got discarded giving only the value
+to return.
+
+Composing and using lenses
+==========================
