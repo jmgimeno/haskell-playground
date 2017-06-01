@@ -24,13 +24,14 @@ Why do we want that?
 ====================
 
 data Person = P { name :: String
-                 , addr :: Address
-                 , salary :: Int }
+                , addr :: Address
+                , salary :: Int }
 
 data Address = A { road :: String
-                  , city :: String
-                  , postcode :: String }
--- addr :: Person -> Address
+                 , city :: String
+                 , postcode :: String }
+
+--addr :: Person -> Address
 
 setName :: String -> Person -> Person
 setName n p = p { name = n }
@@ -43,38 +44,36 @@ setPostcode pc p = p { addr = addr p { postcode = pc } }
 What we want
 ============
 
-> data Person = P { name :: String
->                 , addr :: Address
->                 , salary :: Int }
-
-> data Address = A { road :: String
->                  , city :: String
->                  , postcode :: String }
+data Person = P { name :: String
+                , addr :: Address
+                , salary :: Int }
+data Address = A { road :: String
+                 , city :: String
+                 , postcode :: String }
 
 * A lens for each field
 
-> lname   :: Lens' Person String
-> laddr   :: Lens' Person Address
-> lsalary :: Lens' Person Int
-
-> lroad     :: Lens' Address String
-> lcity     :: Lens' Address String
-> lpostcode :: Lens' Address String
+  lname     :: Lens' Person String
+  laddr     :: Lens' Person Address
+  lsalary   :: Lens' Person Int
+  lroad     :: Lens' Address String
+  lcity     :: Lens' Address String
+  lpostcode :: Lens' Address String
 
 * A way to use the lens to get and update
 
-> view :: Lens' s a -> s -> a
-> set  :: Lens' s a -> a -> s -> s
+  view :: Lens' s a -> s -> a
+  set  :: Lens' s a -> a -> s -> s
 
 * A way to compose lenses
 
-> composeL :: Lens' s1 s2 -> Lens' s2 a -> Lens' s1 a
+  composeL :: Lens' s1 s2 -> Lens' s2 a -> Lens' s1 a
 
 If we had that...
 =================
 
-> setPostcode :: String -> Person -> Person
-> setPostcode pc p = set (laddr `composeL`lpostcode) pc p
+setPostcode :: String -> Person -> Person
+setPostcode pc p = set (laddr `composeL`lpostcode) pc p
 
 * (it is a composite lens)
 * More useful way to compose !!!
@@ -84,20 +83,20 @@ The obvious first attempt
 
 * A lens is just a record with a getter and a setter
 
-> data LensR s a = L { viewR :: s -> a
->                    , setR  :: a -> s -> s }
+data LensR s a = L { viewR :: s -> a
+                   , setR  :: a -> s -> s }
 
-> composeL (L v1 u1) (L v2 u2)
->   = L (\s -> v2 (v1 s))
->       (\a s -> u1 (u2 a (v1 s)) s)
+composeL (L v1 u1) (L v2 u2)
+  = L (\s -> v2 (v1 s))
+      (\a s -> u1 (u2 a (v1 s)) s)
 
 * This works, but...
 * Inefficient. Suppose you want to modify a field, this
 
-> over :: LensR s a -> (a -> a) -> s -> s
-> over ln f s = setR ln (f (viewR ln s)) s
+  over :: LensR s a -> (a -> a) -> s -> s
+  over ln f s = setR ln (f (viewR ln s)) s
 
-  Doing view then update is Not Cool
+  - Doing view then update is Not Cool
 
 * You could add a mofify method... but...
 
@@ -156,19 +155,19 @@ One function to rule them all
 * Twan van Laarhoven
 * Edward Kmett
 
-> type Lens' s a = forall f . Functor f
->                         => (a -> f a) -> s -> f s
+type Lens' s a = forall f . Functor f => (a -> f a) -> s -> f s
 
 * WTF ?
 
 data LensR s a = L { viewR :: s -> a
                    , setR  :: a -> s -> s }
 
-* It's going to turn out that
+* It's going to turn out that:
+
   - Lens' and LensR are isomorphic
 
-> lensToLensR :: Lens' s a -> LensR s a
-> lensRToLens :: LensR s a -> Lens' s a
+    lensToLensR :: Lens' s a -> LensR s a
+    lensRToLens :: LensR s a -> Lens' s a
 
   - But Lens' is better
 
@@ -186,19 +185,19 @@ set ln a s = ...   ln returns a value of type f s
 
 * The way to fet from (f s) to s is to choose the Identity Functor as f
 
-> newtype Identity a = Identity a
+newtype Identity a = Identity a
 
-> runIdentity :: Identity a -> a
-> runIdentity (Identity x) = x
+runIdentity :: Identity a -> a
+runIdentity (Identity x) = x
 
-> instance Functor Identity where
->   fmap f (Identity x) = Identity (f x)
+instance Functor Identity where
+  fmap f (Identity x) = Identity (f x)
 
-> set :: Lens' s a -> (a -> s -> s)
-> set ln x s
->   = runIdentity (ln set_fld s)
->     where set_fld :: a -> Identity a
->           set_fld _ = Identity x
+set :: Lens' s a -> (a -> s -> s)
+set ln x s
+  = runIdentity (ln set_fld s)
+    where set_fld :: a -> Identity a
+          set_fld _ = Identity x
 
 That is, we discard current value and return new value x
 
@@ -207,11 +206,11 @@ That is, we discard current value and return new value x
 
 * Or, as Edward Kmett would write it:
 
-> const :: a -> b -> a
-> const x _ = x
+  const :: a -> b -> a
+  const x _ = x
 
-> set :: Lens' s a -> (a -> s -> s)
-> set ln x = runIdentity . ln (Identity . const x)
+  set :: Lens' s a -> (a -> s -> s)
+  set ln x = runIdentity . ln (Identity . const x)
 
 And, in the same spirit
 =======================
@@ -219,8 +218,8 @@ And, in the same spirit
 set :: Lens' s a -> (a -> s -> s)
 set ln x = runIdentity . ln (Identity . const x)
 
-> over :: Lens' s a -> (a -> a) -> s -> a
-> over ln f = runIdentity . ln (Identity . f)
+over :: Lens' s a -> (a -> a) -> s -> a
+over ln f = runIdentity . ln (Identity . f)
 
 Which is a lot more efficient than the get/set idea we hold before
 
@@ -242,13 +241,13 @@ view ln s = ...      ln returns a value of type (f s)
 
 * (Const v) is a functor that ignores its argument a
 
-> newtype Const v a = Const v
+newtype Const v a = Const v
 
-> getConst :: Const v a -> v
-> getConst (Const x) = x
+getConst :: Const v a -> v
+getConst (Const x) = x
 
-> instance Functor (Const v) where
->   fmap _ (Const x) = Const x
+instance Functor (Const v) where
+  fmap _ (Const x) = Const x
 
 view :: Lens' s a -> (s -> a)
 view ln s
@@ -258,8 +257,8 @@ view ln s
 
 * Or, as Edward would write it:
 
-> view :: Lens' s a -> s -> a
-> view ln = getConst . ln Const
+  view :: Lens' s a -> s -> a
+  view ln = getConst . ln Const
 
 From Lens to LensR
 ==================
@@ -275,8 +274,8 @@ view ln = getComst . ln Const
 set :: Lens' s a -> (a -> s -> s)
 view ln x = getId . ln (Identity . const x)
 
-> lensToLensR :: Lens' s a -> LensR s a
-> LensToLensR ln = L { viewR = view ln, setR = set ln }
+lensToLensR :: Lens' s a -> LensR s a
+LensToLensR ln = L { viewR = view ln, setR = set ln }
 
 Exercise
 ========
@@ -292,14 +291,14 @@ Let's create a Lens
 type Lens' s a = forall f. Functor f
                         => (a -> f a) -> (s -> f s)
 
-> data Person = P { _name :: String, _salary :: Int }
+data Person = P { _name :: String, _salary :: Int }
 
-> name :: Lens' Person String
-> -- name :: Functor f => (String -> f String)
-> --                    -> Person -> f Person
+name :: Lens' Person String
+-- name :: Functor f => (String -> f String)
+--                    -> Person -> f Person
 
-> name elt_fn (P n s)
->   = fmap (\n' -> P n' s) (elt_fn n)
+name elt_fn (P n s)
+  = fmap (\n' -> P n' s) (elt_fn n)
 
 * elt_fn
   - String -> f String
@@ -559,7 +558,7 @@ class Monad m where
 
 * But not vice versa
 
-How does applicativa support multi-focus lenses?
+How does applicative support multi-focus lenses?
 ================================================
 
 data Address = A { _road :: String
@@ -590,7 +589,7 @@ addr_strs elt_fn (A r c p)
 Using Traversals
 ================
 
-ype Traversal' s a = forall f. Applicative f => (a -> f a) -> s -> f s
+type Traversal' s a = forall f. Applicative f => (a -> f a) -> s -> f s
 
 * Reminder
 
@@ -600,7 +599,7 @@ over ln f = runIdentity . ln (Identify . f)
 * Imagine instead ln :: Traversal' s a, does that work?
 
 over :: Traversal' s a -> (a -> a) -> s -> s
-ober ln f = runIdentity . ln (Identity . f)
+over ln f = runIdentity . ln (Identity . f)
 
 * Yes, if Identity is an instance of Applicative, which it is.
 
