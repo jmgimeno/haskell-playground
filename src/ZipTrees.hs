@@ -2,12 +2,14 @@
 
 module ZipTrees where
 
-data Tree a = Empty | Leaf a | Root a (Tree a) (Tree a) deriving (Eq, Ord, Show)
+data Tree a = Empty | Leaf a | Root a (Tree a) (Tree a)
+  deriving (Eq, Ord, Show)
 
 instance Functor Tree where
   fmap f (Empty) = Empty
   fmap f (Leaf v) = Leaf (f v)
-  fmap f (Root v left right) = Root (f v) (fmap f left) (fmap f right)
+  fmap f (Root v left right)
+    = Root (f v) (fmap f left) (fmap f right)
 
 a = fmap (+2) (Root 10 (Leaf 4) (Empty))
 
