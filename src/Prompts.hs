@@ -9,14 +9,14 @@ prompt :: String -> IO String
 prompt msg = putStr (msg ++ ": ") >> hFlush stdout >> getLine
 
 withCond :: (a -> Maybe b) -> (b -> Bool) -> (a -> Maybe b)
-find `withCond` p  = find >=> (\b -> if (p b) then Just b else Nothing)
+extract `withCond` cond = extract >=> (\b -> if (cond b) then Just b else Nothing)
 
-firstOne :: Monad m => (a -> Maybe b) -> [m a] -> m b
-firstOne find (ma:mas) = do a <- ma
-                            maybe (firstOne find mas) return (find a)
+guarantee :: Monad m => (a -> Maybe b) -> [m a] -> m b
+guarantee extract (ma:mas) = do a <- ma
+                                maybe (guarantee extract mas) return (extract a)
 
 ensuring :: IO a -> (a -> Maybe b) -> IO b
-ensuring prompt find = firstOne find $ repeat $ prompt
+ensuring prompt extract = guarantee extract $ repeat $ prompt
 
 main = do a <- prompt "enter a" `ensuring` (readMaybe `withCond` (>0))
           b <- prompt "enter b" `ensuring` (readMaybe `withCond` (>0))
