@@ -3,7 +3,7 @@ From Bits to Cells: Simple Cellular Automata in Haskell, Part Two
 http://praisecurseandrecurse.blogspot.com.es/2006/12/from-bits-to-cells-simple-cellular_19.html
 
 
-> module CA.FromBitsToCellsPt2 where
+> module FromBitsToCellsPt2 where
 
 Last time we defined a function to generate the next state of a given
 cell in our cellular universe, given a rule number and a tuple consisting

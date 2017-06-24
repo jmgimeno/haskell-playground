@@ -17,7 +17,7 @@ to represent a 'universe' as a centre point, a list of all elements to the left
 of that centre point and a list of all elements to the right. Here's a suitable
 type:
 
-> module CA.EvaluatingCA where
+> module EvaluatingCA where
 
 > data U a = U [a] a [a]
 

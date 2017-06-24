@@ -8,7 +8,7 @@ http://javran.github.io/posts/2014-08-22-comonad-zipper-and-conways-game-of-life
 
 -}
 
-module CA.LZipper where
+module LZipper where
 
 -- | LZipper <current> <left (reversed)> <right>
 data LZipper a = LZipper a [a] [a]

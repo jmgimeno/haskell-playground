@@ -2,7 +2,7 @@ From Bits to Cells: Simple Cellular Automata in Haskell, Part One
 
 http://praisecurseandrecurse.blogspot.com.es/2006/12/from-bits-to-cells-simple-cellular.html
 
-> module CA.FromBitsToCellsPt1 where
+> module FromBitsToCellsPt1 where
 
 Some Haskell code to implement simple cellular automata (CA) rules:
 part one, round one.

@@ -1,4 +1,4 @@
-> module CA.ZippersAndComonads where
+> module ZippersAndComonads where
 
 Zippers and Comonads in Haskell
 Posted on September 30, 2013 by kunigami
