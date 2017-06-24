@@ -15,7 +15,7 @@ guarantee :: Monad m => (a -> Maybe b) -> [m a] -> m b
 guarantee extract (ma:mas) = do a <- ma
                                 maybe (guarantee extract mas) return (extract a)
 
-ensuring :: IO a -> (a -> Maybe b) -> IO b
+ensuring :: Monad m => m a -> (a -> Maybe b) -> m b
 ensuring prompt extract = guarantee extract $ repeat $ prompt
 
 main = do a <- prompt "enter a" `ensuring` (readMaybe `withCond` (>0))
