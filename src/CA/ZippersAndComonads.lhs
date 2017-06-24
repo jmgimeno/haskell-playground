@@ -1,4 +1,4 @@
-> module ZippersAndComonads where
+> module CA.ZippersAndComonads where
 
 Zippers and Comonads in Haskell
 Posted on September 30, 2013 by kunigami
@@ -220,7 +220,7 @@ toString $ (=>> rule)  (Universe (repeat False) True (repeat False))
 To run some iterations and print the whole process we can add some boilerplate code:
 
   putStr . unlines . (take 20) . (map toString) $ iterate (=>> rule) example
-    where example = Universe (repeat False) True (repeat False)
+  where example = Universe (repeat False) True (repeat False)
 
 This will print out 20 lines of a Sierpinski Triangle!
 
