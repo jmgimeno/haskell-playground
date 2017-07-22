@@ -7,10 +7,11 @@
 
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TupleSections #-}
 
 module FunWithProfunctors where
 
-import Control.Arrow ((***))
+import Control.Arrow ((***), (&&&))
 import Data.Tuple (swap)
 import Prelude hiding (Functor, fmap)
 
@@ -152,17 +153,28 @@ instance Strong (->) where
     -- Examples:
 
 instance Strong (Forget r) where
-    first  = undefined
-    second = undefined
+    first  (Forget ar) = Forget $ ar . fst
+    second (Forget ar) = Forget $ ar . snd 
 
 instance Functor f => Strong (Star f) where
-    first  = undefined
-    second = undefined
-{-
-instance Comonad f => Strong (Costar w) where
-    first  = undefined
-    second = undefined
--}
+    first  (Star afb) = Star $ \(a, x) -> fmap (,x) (afb a) 
+    second (Star afb) = Star $ \(x, a) -> fmap (x,) (afb a)
+
+class Functor w => Comonad w where
+    extract   :: w a -> a
+    duplicate :: w a -> w (w a)
+    extend    :: (w a -> b) -> w a -> w b
+
+instance Comonad w => Strong (Costar w) where
+    {-
+    (w a -> b) -> w (a, x) -> (b, x) 
+    first  (Costar wab) = Costar $ \wax -> let b = wab (fmap fst wax)
+                                               x = snd (extract wax)
+                                           in (b, x)
+    -}
+    first  (Costar wab) = Costar $ wab . fmap fst &&& snd . extract
+    second (Costar wab) = Costar $ fst . extract  &&& wab . fmap snd
+
 instance Strong (Fold m) where
     first  = undefined
     second = undefined
