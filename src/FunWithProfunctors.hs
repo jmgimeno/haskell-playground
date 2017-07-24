@@ -176,12 +176,16 @@ instance Comonad w => Strong (Costar w) where
     second (Costar wab) = Costar $ fst . extract  &&& wab . fmap snd
 
 instance Strong (Fold m) where
-    first  = undefined
-    second = undefined
+    first  (Fold fold) = Fold $ \bx_m (a, x) -> fold (\b -> bx_m (b, x)) a
+    second (Fold fold) = Fold $ \xb_m (x, a) -> fold (\b -> xb_m (x, b)) a
 
 instance Strong Mealy where
-    first  = undefined
-    second = undefined
+    {-
+    first  (Mealy mealy) = Mealy $ \(a, x) -> let (b, mab) = mealy a
+                                              in ((b, x), dimap fst (,x) mab)
+    -}
+    first  (Mealy mealy) = Mealy $ \(a, x) -> ((,x) *** dimap fst (,x)) (mealy a)
+    second (Mealy mealy) = Mealy $ \(x, a) -> ((x,) *** dimap snd (x,)) (mealy a)
 
 {-
     * Try composing these:
