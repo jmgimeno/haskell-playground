@@ -309,8 +309,16 @@ instance Monoid m => Choice (Fold m) where
         = Fold $ \ebx_m -> either (ebx_m . Left) (fold (ebx_m . Right)) 
 
 instance Choice Mealy where
-    left  = undefined
-    right = undefined
+    left  (Mealy mealy) 
+        = Mealy $ \eax -> case eax of
+                            Left a  -> let (b, mab) = mealy a
+                                       in (Left b, dimap (const a) Left mab)
+                            Right x -> (Right x, left (Mealy mealy))
+    right (Mealy mealy) 
+        = Mealy $ \exa -> case exa of
+                            Right a -> let (b, mab) = mealy a
+                                       in (Right b, dimap (const a) Right mab)
+                            Left x  -> (Left x, right (Mealy mealy))
 
     -- Remember that in the van Leuhoven presentation we get
     -- prisms by using Applicative. Here is the same because
