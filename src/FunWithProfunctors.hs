@@ -13,12 +13,11 @@ module FunWithProfunctors where
 
 import Control.Arrow ((***), (&&&))
 import Data.Tuple (swap)
-import Prelude hiding (Functor, fmap)
 
 -- Functor
 
-class Functor f where
-    fmap :: (a -> b) -> f a -> f b
+--class Functor f where
+--    fmap :: (a -> b) -> f a -> f b
 
 data Burrito filling = Tortilla filling
 
@@ -202,7 +201,7 @@ instance Strong Mealy where
     These are starting to look a lot like lenses!
 -}
 
--- Profucntor Lenses
+-- Profunctor Lenses
 
 type Iso  s t a b = forall p. Profunctor p => p a b -> p s t
 type Lens s t a b = forall p. Strong p     => p a b -> p s t
@@ -281,22 +280,33 @@ instance Choice (->) where
     -- Examples
 
 instance Monoid m => Choice (Forget m) where
-    left  = undefined
-    right = undefined
-
-{-
+    left  (Forget am) = Forget $ either am (const mempty)
+    right (Forget am) = Forget $ either (const mempty) am
+ 
 instance Applicative f => Choice (Star f) where
-    left  = undefined
-    right = undefined
+    left  (Star f) = Star $ either (fmap Left . f) (pure . Right)
+    right (Star f) = Star $ either (pure . Left) (fmap Right . f) 
 
 instance Comonad w => Choice (Costar w) where
-    left  = undefined
-    right = undefined
--}
+    left  (Costar f) 
+        = Costar $ \weax -> case extract weax of
+                                Left  a -> Left $ f $ fmap (const a) weax
+                                Right x -> Right x 
+    right (Costar f) 
+        = Costar $ \wexa -> case extract wexa of
+                                Right a -> Right $ f $ fmap (const a) wexa
+                                Left  x -> Left x 
 
 instance Monoid m => Choice (Fold m) where
-    left  = undefined
-    right = undefined
+    {-
+    left  (Fold fold) = Fold $ \ebx_m eax -> case eax of
+                                                Left a -> fold (ebx_m . Left) a
+                                                Right x -> ebx_m (Right x)
+    -}
+    left  (Fold fold) 
+        = Fold $ \ebx_m -> either (fold (ebx_m . Left)) (ebx_m . Right)
+    right (Fold fold) 
+        = Fold $ \ebx_m -> either (ebx_m . Left) (fold (ebx_m . Right)) 
 
 instance Choice Mealy where
     left  = undefined
