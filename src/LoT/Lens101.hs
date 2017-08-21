@@ -3,6 +3,7 @@
 module LoT.Lens101 where
 
 import Control.Arrow
+import Control.Monad
 
 type Lens s t a b = forall f. Functor f => (a -> f b) -> s -> f t
 type Lens' s a = Lens s s a a
@@ -32,12 +33,14 @@ choosing _  l2 f (Right s2) = Right <$> l2 f s2
 -- before the end of the section, so don't scroll if you don't want it.)
 (<%-) :: Lens s t a b -> (a -> b) -> s -> (b, t)
 --(<%-) l f s = l (\a -> let b = f a in (b, b)) s
-(<%-) l f = l ((id &&& id) . f)
+--(<%-) l f = l ((id &&& id) . f)
+(<%-) l f = l (join (,) . f)
 
 -- Modify the target of a lens, but return the old value.
 (<<%-) :: Lens s t a b -> (a -> b) -> s -> (a, t)
 --(<<%-) l f s = l (\a -> (a, f a)) s
-(<<%-) l f = l (id &&& f)
+--(<<%-) l f = l (id &&& f)
+(<<%-) l f = l ((,) <*> f)
 
 -- There's a () in every value. (No idea what this one is for, maybe it'll
 -- become clear later.)
