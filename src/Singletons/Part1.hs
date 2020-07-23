@@ -12,7 +12,7 @@
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Singletons where
+module Singletons.Part1 where
 
 import           Data.Kind
 import           Data.Singletons
