@@ -118,6 +118,27 @@ unlockDoor n (UnsafeMkDoor m)
     | otherwise      = Nothing
 
 unlockSomeDoor :: Int -> Door 'Locked -> SomeDoor
-unlockSomeDoor n dl = case unlockDoor n dl of
-                        Nothing -> MkSomeDoor Sing dl
-                        Just dc -> MkSomeDoor Sing dc
+unlockSomeDoor n dl = 
+    case unlockDoor n dl of
+        Nothing -> MkSomeDoor Sing dl
+        Just dc -> MkSomeDoor Sing dc
+
+-- Exercise 3
+
+-- Implement openAnyDoor' in the same style, with respect to openAnyDoor:
+
+openAnyDoor :: SingI s => Int -> Door s -> Maybe (Door 'Opened)
+openAnyDoor n = openAnyDoor_ sing
+  where
+    openAnyDoor_ :: Sing s -> Door s -> Maybe (Door 'Opened)
+    openAnyDoor_ = \case
+      SOpened -> Just
+      SClosed -> Just . openDoor
+      SLocked -> fmap openDoor . unlockDoor n
+
+openAnySomeDoor :: Int -> SomeDoor -> SomeDoor
+openAnySomeDoor n sd@(MkSomeDoor s d) = 
+    case withSingI s (openAnyDoor n d) of
+        Nothing -> sd
+        Just d' -> MkSomeDoor Sing d'
+
