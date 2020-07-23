@@ -100,3 +100,24 @@ toOld (MkSomeDoor s d) = OldMkSomeDoor (fromSing s) (doorMaterial d)
 
 fromOld :: OldSomeDoor -> SomeDoor
 fromOld (OldMkSomeDoor ds m) = withSomeSing ds (\sa -> MkSomeDoor sa (UnsafeMkDoor m))
+
+-- Exercise 2
+{-
+Previously, we had an unlockDoor function that took an Int (the “password”) with a 
+Door 'Locked and returned a Maybe (Door 'Closed). It returns a Door 'Closed (unlocked door) 
+in Just if an odd number was given, and Nothing otherwise (a failed unlock)
+
+Use this to implement a that would return a SomeDoor. Re-use the “password” logic from the 
+original unlockDoor. If the door is successfully unlocked (with a Just), return the unlocked 
+door in a SomeDoor. Otherwise, return the original locked door (in a SomeDoor).
+-}
+
+unlockDoor :: Int -> Door 'Locked -> Maybe (Door 'Closed)
+unlockDoor n (UnsafeMkDoor m)
+    | n `mod` 2 == 1 = Just (UnsafeMkDoor m)
+    | otherwise      = Nothing
+
+unlockSomeDoor :: Int -> Door 'Locked -> SomeDoor
+unlockSomeDoor n dl = case unlockDoor n dl of
+                        Nothing -> MkSomeDoor Sing dl
+                        Just dc -> MkSomeDoor Sing dc
