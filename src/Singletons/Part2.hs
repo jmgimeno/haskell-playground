@@ -96,10 +96,12 @@ data OldSomeDoor :: Type where
 -- Instead, use singletons library tools like toSing, withSomeSing, fromSing,  etc.
 
 toOld :: SomeDoor -> OldSomeDoor
-toOld (MkSomeDoor s d) = OldMkSomeDoor (fromSing s) (doorMaterial d)
+toOld (MkSomeDoor s d) = 
+    OldMkSomeDoor (fromSing s) (doorMaterial d)
 
 fromOld :: OldSomeDoor -> SomeDoor
-fromOld (OldMkSomeDoor ds m) = withSomeSing ds (\sa -> MkSomeDoor sa (UnsafeMkDoor m))
+fromOld (OldMkSomeDoor ds m) = 
+    withSomeSing ds (\sa -> MkSomeDoor sa (UnsafeMkDoor m))
 
 -- Exercise 2
 {-
@@ -141,4 +143,30 @@ openAnySomeDoor n sd@(MkSomeDoor s d) =
     case withSingI s (openAnyDoor n d) of
         Nothing -> sd
         Just d' -> MkSomeDoor Sing d'
+
+-- Exercise 4
+
+-- Write the SingKind instance for the promoted kind of a custom list type:
+
+data List a = Nil | Cons a (List a)
+
+data SList :: List a -> Type where
+    SNil  :: SList 'Nil
+    SCons :: Sing x -> SList xs -> SList ('Cons x xs)
+
+type instance Sing = SList
+
+instance SingKind k => SingKind (List k) where
+    type Demote (List k) = List (Demote k)
+
+    fromSing :: Sing (xs :: List k) -> List (Demote k)
+    fromSing = \case
+        SNil -> Nil
+        SCons sx sxs -> Cons (fromSing sx) (fromSing sxs)
+
+    toSing :: List (Demote k) -> SomeSing (List k)
+    toSing = \case
+        Nil -> SomeSing SNil
+        Cons dx dxs -> case (toSing dx, toSing dxs) of
+            (SomeSing sx, SomeSing sxs) -> SomeSing (SCons sx sxs)
 
