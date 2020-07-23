@@ -101,7 +101,7 @@ toOld (MkSomeDoor s d) =
 
 fromOld :: OldSomeDoor -> SomeDoor
 fromOld (OldMkSomeDoor ds m) = 
-    withSomeSing ds (\sa -> MkSomeDoor sa (UnsafeMkDoor m))
+    mkSomeDoor ds m
 
 -- Exercise 2
 {-
@@ -120,10 +120,10 @@ unlockDoor n (UnsafeMkDoor m)
     | otherwise      = Nothing
 
 unlockSomeDoor :: Int -> Door 'Locked -> SomeDoor
-unlockSomeDoor n dl = 
-    case unlockDoor n dl of
-        Nothing -> MkSomeDoor Sing dl
-        Just dc -> MkSomeDoor Sing dc
+unlockSomeDoor n d = 
+    case unlockDoor n d of
+        Nothing -> fromDoor_ d
+        Just d' -> fromDoor_ d'
 
 -- Exercise 3
 
@@ -139,10 +139,10 @@ openAnyDoor n = openAnyDoor_ sing
       SLocked -> fmap openDoor . unlockDoor n
 
 openAnySomeDoor :: Int -> SomeDoor -> SomeDoor
-openAnySomeDoor n sd@(MkSomeDoor s d) = 
-    case withSingI s (openAnyDoor n d) of
+openAnySomeDoor n sd@(MkSomeDoor s d) = withSingI s $
+    case openAnyDoor n d of
         Nothing -> sd
-        Just d' -> MkSomeDoor Sing d'
+        Just d' -> fromDoor_ d'
 
 -- Exercise 4
 
@@ -167,6 +167,7 @@ instance SingKind k => SingKind (List k) where
     toSing :: List (Demote k) -> SomeSing (List k)
     toSing = \case
         Nil -> SomeSing SNil
-        Cons dx dxs -> case (toSing dx, toSing dxs) of
-            (SomeSing sx, SomeSing sxs) -> SomeSing (SCons sx sxs)
+        Cons x xs -> withSomeSing x $ \sx ->
+                     withSomeSing xs $ \sxs ->
+            SomeSing (SCons sx sxs)
 
