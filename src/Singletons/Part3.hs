@@ -120,3 +120,37 @@ specific kind instance) is essentially `const True`, the always True predicate
 decideDoorState :: Sing s -> Decision (SDoorState s)
 decideDoorState = Proved
 
+{-
+
+2. Now let’s practice working with predicates, singletons, and negation via 
+Refuted together.
+
+You may have heard of the principle of “double negation”, where not (not p) 
+implies p. So, we should be able to say that Refuted (Refuted (Knockable s)) 
+implies Knockable s. If something is not “not knockable”, then it must 
+be knockable, right?
+
+Try writing refuteRefuteKnockable to verify this principle — at least for 
+the Knockable predicate.
+
+While not required, I recommend using isKnockable and writing your 
+implementation in terms of it! Use sing to give isKnockable the singleton 
+it needs.
+
+Hint: You might find absurd (from Data.Void) helpful:
+
+absurd :: forall a. Void -> a
+
+If you have a Void, you can make a value of any type!
+
+-}
+
+refuteRefuteKnockable
+    :: forall s. SingI s
+    => Refuted (Refuted (Knockable s))
+    -> Knockable s
+refuteRefuteKnockable rrK = 
+    case isKnockable sing of
+        Proved k -> k
+        Disproved rK -> absurd $ rrK rK
+
