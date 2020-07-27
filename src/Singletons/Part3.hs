@@ -154,3 +154,110 @@ refuteRefuteKnockable rrK =
         Proved k -> k
         Disproved rK -> absurd $ rrK rK
 
+{-
+
+    
+3. (This next one is fairly difficult compared to the others, and is only 
+tangentially related to singletons, so feel free to skip it!)
+
+Type-level predicates are logical constructs, so we should be able to define 
+concepts like “and” and “or” with them.
+
+ a. Define a predicate constructor And that takes two predicates and returns a 
+    new predicate. This new predicate is true (aka, has an inhabitant) if and 
+    only if the two original predicates are true (aka, have inhabitants)
+-}
+
+data And :: (k -> Type) -> (k -> Type) -> (k -> Type) where
+    And :: l s -> r s -> (And l r) s
+
+{-
+
+ b. Define a predicate constructor Or that takes two predicates and returns 
+    a new predicate. This new predicate is true (aka, has an inhabitant) if 
+    and only if at least one of the two original predicates are true (aka, 
+    have inhabitants)
+
+    There are potentially multiple non-trivial variations of this type.
+
+    Do And and Or look similar to any types you might have encountered in 
+    the past? Maybe, perhaps, similiar to types that are a part of basic 
+    beginner Haskell concepts?
+
+    => (a, b) and Either a b
+-}
+
+data Or :: (k -> Type) -> (k -> Type) -> (k -> Type) where
+    OrL :: l s -> (Or l r) s
+    OrR :: r s -> (Or l r) s
+
+{-
+
+ c. Maybe surprisingly, And p q and Or p q are decidable if p and q are. 
+    Can we write the decision functions?
+
+    These functions actually demonstrate, I feel, why Decision having both 
+    a Proved a and Disproved (Refuted a) branch is very useful. This is 
+    because, if you wrote the structure of And and Or correctly, it’s 
+    impossible to incorrectly define decideAnd and decideOr. You can’t 
+    accidentally say false when it’s true, or true when it’s false — your 
+    implementation is guarunteed correct.
+-}
+
+decideAnd
+    :: (forall x. Sing x -> Decision (p x))
+    -> (forall x. Sing x -> Decision (q x))
+    -> Sing a
+    -> Decision (And p q a)
+decideAnd dp dq sa 
+    = decideAnd' (dp sa) (dq sa)
+        where
+            decideAnd' :: Decision (p a) -> Decision (q a) -> Decision (And p q a)
+            decideAnd' (Proved pa) (Proved qa) = Proved $ And pa qa
+            decideAnd' (Disproved rPa) _ = Disproved $ \(And pa _) -> rPa pa
+            decideAnd' _ (Disproved rQa) = Disproved $ \(And _ qa) -> rQa qa
+
+
+decideOr
+    :: (forall x. Sing x -> Decision (p x))
+    -> (forall x. Sing x -> Decision (q x))
+    -> Sing a
+    -> Decision (Or p q a)
+decideOr dp dq sa 
+    = decideOr' (dp sa) (dq sa)
+        where
+            decideOr' :: Decision (p a) -> Decision (q a) -> Decision (Or p q a)
+            decideOr' (Proved pa) _ = Proved $ OrL pa
+            decideOr' _ (Proved qa) = Proved $ OrR qa
+            decideOr' (Disproved rPa) (Disproved rQa) 
+                = Disproved $ \case 
+                    OrL pa -> rPa pa
+                    OrR qa -> rQa qa
+
+{-
+
+ d. Now let’s use And and Or to prove some useful facts about Knockable and 
+    ('Opened :~:). We know that it’s impossible for something to be both 
+    Knockable and ('Opened :~:) (that is, both knockable and equal to 'Opened). 
+    Write such a witness:
+-}
+
+knockableNotOpened
+    :: forall s. SingI s
+    => Refuted (And Knockable ((:~:) 'Opened) s)
+knockableNotOpened (And k o) = case k of
+    KnockClosed -> case o of {} -- no constructor of type ('Opened :~: 'Closed)
+    KnockLocked -> case o of {} -- no constructor of type ('Opened :~: 'Locked)
+
+{-
+    We also know that a given DoorState is either Knockable or ('Opened :~:) — 
+    at least one of these is always true. Write such a witness:  
+-}
+
+knockableOrOpened
+    :: forall s. SingI s
+    => Or Knockable ((:~:) 'Opened) s
+knockableOrOpened = case sing @s of
+    SOpened -> OrR $ Refl
+    SClosed -> OrL KnockClosed
+    SLocked -> OrL KnockLocked
