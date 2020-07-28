@@ -303,3 +303,40 @@ refuteKnocked rE = case sing @s of
     SClosed -> KnockClosed
     SLocked -> KnockLocked
 
+{-
+
+5. On our type level function version of knock, we wrote, with a constraint:
+
+knock :: (StatePass s ~ 'Obstruct) => Door s -> IO ()
+knock d = putStrLn $ "Knock knock on " ++ doorMaterial d ++ " door!"
+
+We can muddy the waters a bit, for fun, by having this take a proof of the 
+constraint instead:
+
+knockRefl :: (StatePass s :~: 'Obstruct) -> Door s -> IO ()
+knockRefl _ d = putStrLn $ "Knock knock on " ++ doorMaterial d ++ " door!"
+
+Rewrite a version of knockSomeDoor in terms of knockRefl, called knockSomeDoorRefl:
+
+Remember not to use knock!
+
+Assume that DoorState has an instance of SDecide, so you can use (%~). This should be 
+derived automatically as long as you derive Eq:
+
+$(singletons [d|
+  data DoorState = Opened | Closed | Locked
+    deriving (Show, Eq)
+  |])
+
+-}
+
+knockRefl :: (StatePass s :~: 'Obstruct) -> Door s -> IO ()
+knockRefl _ d = putStrLn $ "Knock knock on " ++ doorMaterial d ++ " door!"
+
+knockSomeDoorRefl
+    :: SomeDoor
+    -> IO ()
+knockSomeDoorRefl (MkSomeDoor s d) = case sStatePass s of
+    SAllow -> putStrLn "cannot know on opened door !"
+    SObstruct -> knockRefl Refl d
+
