@@ -340,3 +340,12 @@ knockSomeDoorRefl (MkSomeDoor s d) = case sStatePass s of
     SAllow -> putStrLn "cannot know on opened door !"
     SObstruct -> knockRefl Refl d
 
+-- Official solution:
+
+knockSomeDoorRefl'
+    :: SomeDoor
+    -> IO ()
+knockSomeDoorRefl' (MkSomeDoor s d) =
+    case sStatePass s %~ SObstruct of
+      Proved r    -> knockRefl r d
+      Disproved _ -> putStrLn "No knocking allowed!"
