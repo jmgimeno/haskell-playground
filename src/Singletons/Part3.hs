@@ -349,3 +349,109 @@ knockSomeDoorRefl' (MkSomeDoor s d) =
     case sStatePass s %~ SObstruct of
       Proved r    -> knockRefl r d
       Disproved _ -> putStrLn "No knocking allowed!"
+
+{-
+
+6. With the function that inverts Pass:
+
+$(singletons [d|
+  invertPass :: Pass -> Pass
+  invertPass Obstruct = Allow
+  invertPass Allow    = Obstruct
+|])
+
+Implement knock in a way that lets you knock if invertPass is Allow:
+
+knockInv :: (InvertPass (StatePass s) ~ 'Allow) => Door s -> IO ()
+knockInv d = putStrLn $ "Knock knock on " ++ doorMaterial d ++ " door!"
+
+And write knockSomeDoor in terms of it:
+
+knockSomeDoorInv
+    :: SomeDoor
+    -> IO ()
+knockSomeDoorInv (MkSomeDoor s d) =
+
+Remember again to implement it in terms of knockInv, not knock.6. 
+-}
+
+$(singletons [d|
+    invertPass :: Pass -> Pass
+    invertPass Obstruct = Allow
+    invertPass Allow    = Obstruct
+    |])
+
+knockInv :: (InvertPass (StatePass s) ~ 'Allow) => Door s -> IO ()
+knockInv d = putStrLn $ "Knock knock on " ++ doorMaterial d ++ " door!"
+
+knockViaKnockInv :: (StatePass s ~ 'Obstruct) => Door s -> IO ()
+knockViaKnockInv = knockInv
+
+knockSomeDoorInv
+    :: SomeDoor
+    -> IO ()
+knockSomeDoorInv (MkSomeDoor s d) 
+    = case sInvertPass (sStatePass s) of
+        SAllow -> knockInv d
+        SObstruct -> putStrLn "Cannot knock"
+
+{-
+
+7. Let’s work with a toy typeclass called Cycle, based on Enum
+
+$(singletons [d|
+  class Cycle a where
+    next :: a -> a
+    prev :: a -> a
+  |])
+
+next is like succ, but loops over to the first item after the last constructor. prev is 
+like pred, but loops over to the last item if pred-ing the first item
+
+instance Cycle DoorState where
+    next Opened = Closed
+    next Closed = Locked
+    next Locked = Opened
+
+    prev Opened = Locked
+    prev Closed = Opened
+    prev Locked = Closed
+
+Can you manually promote this instance for DoorState to the type level?
+
+-}
+
+$(singletons [d|
+  class Cycle a where
+    next :: a -> a
+    prev :: a -> a
+  |])
+
+instance Cycle DoorState where
+    next Opened = Closed
+    next Closed = Locked
+    next Locked = Opened
+
+    prev Opened = Locked
+    prev Closed = Opened
+    prev Locked = Closed
+
+instance PCycle DoorState where
+    type Next 'Opened = 'Closed
+    type Next 'Closed = 'Locked
+    type Next 'Locked = 'Opened
+
+    type Prev 'Opened = 'Locked
+    type Prev 'Closed = 'Opened
+    type Prev 'Locked = 'Closed
+
+instance SCycle DoorState where
+    sNext = \case
+        SOpened -> SClosed
+        SClosed -> SLocked
+        SLocked -> SOpened
+
+    sPrev = \case
+        SOpened -> SLocked
+        SClosed -> SOpened
+        SLocked -> SClosed
