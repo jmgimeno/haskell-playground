@@ -349,3 +349,49 @@ knockSomeDoorRefl' (MkSomeDoor s d) =
     case sStatePass s %~ SObstruct of
       Proved r    -> knockRefl r d
       Disproved _ -> putStrLn "No knocking allowed!"
+
+{-
+
+6. With the function that inverts Pass:
+
+$(singletons [d|
+  invertPass :: Pass -> Pass
+  invertPass Obstruct = Allow
+  invertPass Allow    = Obstruct
+|])
+
+Implement knock in a way that lets you knock if invertPass is Allow:
+
+knockInv :: (InvertPass (StatePass s) ~ 'Allow) => Door s -> IO ()
+knockInv d = putStrLn $ "Knock knock on " ++ doorMaterial d ++ " door!"
+
+And write knockSomeDoor in terms of it:
+
+knockSomeDoorInv
+    :: SomeDoor
+    -> IO ()
+knockSomeDoorInv (MkSomeDoor s d) =
+
+Remember again to implement it in terms of knockInv, not knock.6. 
+-}
+
+$(singletons [d|
+    invertPass :: Pass -> Pass
+    invertPass Obstruct = Allow
+    invertPass Allow    = Obstruct
+    |])
+
+knockInv :: (InvertPass (StatePass s) ~ 'Allow) => Door s -> IO ()
+knockInv d = putStrLn $ "Knock knock on " ++ doorMaterial d ++ " door!"
+
+knockViaKnockInv :: (StatePass s ~ 'Obstruct) => Door s -> IO ()
+knockViaKnockInv = knockInv
+
+knockSomeDoorInv
+    :: SomeDoor
+    -> IO ()
+knockSomeDoorInv (MkSomeDoor s d) 
+    = case sInvertPass (sStatePass s) of
+        SAllow -> knockInv d
+        SObstruct -> putStrLn "Cannot knock"
+
