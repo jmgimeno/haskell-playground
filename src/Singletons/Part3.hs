@@ -261,3 +261,45 @@ knockableOrOpened = case sing @s of
     SOpened -> OrR $ Refl
     SClosed -> OrL KnockClosed
     SLocked -> OrL KnockLocked
+
+{-
+ 4. Instead of creating an entire Knocked type, we could have just said 
+ “as long as the door is not 'Opened, you can knock”. This means we could 
+ write knock as:
+
+ knock :: Refuted (s :~: 'Opened) -> Door s -> IO ()
+
+ Which we must pass a proof that s is not equal to 'Opened in order to 
+ open our door.
+
+ Is this really the same thing? Is Refuted (s :~: 'Opened) the same thing 
+ as Knockable s?
+
+ Let’s try to say that the two things are the same! Write the following 
+ functions to show that Refuted (s :~: 'Opened) is the same logical predicate 
+ as Knockable s!
+
+ Note: knockedRefute is fairly straightforward, but refuteKnocked is definitely 
+ trickier, so don’t be discouraged!
+
+ Hint: See the note about absurd from Exercise 2!
+-}
+
+knockedRefute
+    :: forall s. SingI s
+    => Knockable s
+    -> Refuted (s :~: 'Opened)
+knockedRefute k 
+    = case k of
+        KnockClosed -> \case {}  -- no ctors of type 'Closed :~: 'Opened
+        KnockLocked -> \case {}  -- no ctors of type 'Locked :~: 'Opened
+
+refuteKnocked
+    :: forall s. SingI s
+    => Refuted (s :~: 'Opened)
+    -> Knockable s
+refuteKnocked rE = case sing @s of
+    SOpened -> absurd $ rE Refl
+    SClosed -> KnockClosed
+    SLocked -> KnockLocked
+
