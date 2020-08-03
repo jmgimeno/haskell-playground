@@ -4,7 +4,7 @@
 -- https://gist.github.com/nomeata/68dd80d51c2aee51ad8c97b93388c269
 
 {-# LANGUAGE DeriveFoldable #-}
-module Tree where
+module IsOrderedTree where
 
 import Control.Monad
 import Data.Maybe
