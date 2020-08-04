@@ -184,3 +184,52 @@ mergedIsKnockable s t = case (s, t) of
   (KnockClosed, KnockLocked) -> KnockLocked
   (KnockLocked, KnockClosed) -> KnockLocked
   (KnockLocked, KnockLocked) -> KnockLocked
+
+{-
+
+2. Write a function to append two hallways together.
+
+appendHallways
+    :: Hallway ss
+    -> Hallway ts
+    -> Hallway ????
+
+from singletons — implement any type families you might need from scratch!
+
+Remember the important principle that your type family must mirror the 
+implementation of the functions that use it.
+
+Next, for fun, use appendHallways to implement appendSomeHallways:
+
+type SomeHallway = Sigma [DoorState] (TyCon1 Hallway)
+
+appendSomeHallways
+    :: SomeHallway
+    -> SomeHallway
+    -> SomeHallway
+-}
+
+type family AppendHallways (x :: [k]) (y :: [k]) :: [k] where
+  AppendHallways '[]       y = y
+  AppendHallways (x ': xs) y = x ': AppendHallways xs y
+
+appendHallways
+    :: Hallway ss
+    -> Hallway ts
+    -> Hallway (AppendHallways ss ts)
+appendHallways HEnd t       = t
+appendHallways (d :<# ds) t = d :<# appendHallways ds t
+
+
+sAppendHallways :: Sing s
+                -> Sing t
+                -> Sing (AppendHallways s t)
+sAppendHallways SNil         st = st
+sAppendHallways (SCons x xs) st = SCons x (sAppendHallways xs st)
+
+appendSomeHallways
+    :: SomeHallway
+    -> SomeHallway
+    -> SomeHallway
+appendSomeHallways (ss :&:s) (st :&: t) 
+  = sAppendHallways ss st :&: appendHallways s t
