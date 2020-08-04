@@ -149,4 +149,38 @@ $(singletons [d|
   statePass Locked = Obstruct
   |])
 
-  
+{-
+
+1. Let’s try combining type families with proofs! In doing so, hopefully 
+we can also see the value of using dependent proofs to show how we can 
+manipulate proofs as first-class values that the compiler can verify.
+
+Remember Knockable from Part 3?
+
+data Knockable :: DoorState -> Type where
+    KnockClosed :: Knockable 'Closed
+    KnockLocked :: Knockable 'Locked
+
+Closed and Locked doors are knockable. But, if you merge two knockable
+doors…is the result also always knockable?
+
+I say yes, but don’t take my word for it. Prove it using Knockable!
+
+mergedIsKnockable
+    :: Knockable s
+    -> Knockable t
+    -> Knockable (MergeState s t)
+
+mergedIsKnockable is only implementable if the merging of two DoorStates 
+that are knockable is also knockable. See if you can write the implementation!
+-}
+
+mergedIsKnockable
+    :: Knockable s
+    -> Knockable t
+    -> Knockable (MergeState s t)
+mergedIsKnockable s t = case (s, t) of
+  (KnockClosed, KnockClosed) -> KnockClosed
+  (KnockClosed, KnockLocked) -> KnockLocked
+  (KnockLocked, KnockClosed) -> KnockLocked
+  (KnockLocked, KnockLocked) -> KnockLocked
