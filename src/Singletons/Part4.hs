@@ -233,3 +233,38 @@ appendSomeHallways
     -> SomeHallway
 appendSomeHallways (ss :&:s) (st :&: t) 
   = sAppendHallways ss st :&: appendHallways s t
+
+{-
+
+3. Can you use Sigma to define a door that must be knockable?
+
+To do this, try directly defining the defunctionalization symbol 
+KnockableDoor :: DoorState ~> Type (or use singletons to generate it 
+for you — remember that singletons can also promote type families) 
+so that:
+
+type SomeKnockableDoor = Sigma DoorState KnockableDoor
+
+will contain a Door that must be knockable.
+
+Try doing it for both (a) the “dependent proof” version (with the 
+Knockable data type) and for (b) the type family version (with the 
+StatePass type family).
+
+Solutions here! I gave four different ways of doing it, for a full 
+range of manual vs. auto-promoted defunctionalization symbols and 
+Knockable vs. Pass-based methods.
+
+Hint: Look at the definition of SomeDoor in terms of Sigma:
+
+type SomeDoor = Sigma DoorState (TyCon1 Door)
+
+Hint: Try having KnockableDoor return a tuple.
+-}
+
+data KnockableDoor :: DoorState ~> Type
+type instance Apply KnockableDoor 'Closed = Door 'Closed
+type instance Apply KnockableDoor 'Locked = Door 'Locked
+
+type SomeKnockableDoor = Sigma DoorState KnockableDoor
+
