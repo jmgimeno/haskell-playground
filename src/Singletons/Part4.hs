@@ -208,32 +208,28 @@ appendSomeHallways
     -> SomeHallway
     -> SomeHallway
 -}
-
-type family AppendHallways (x :: [k]) (y :: [k]) :: [k] where
-  AppendHallways '[]       y = y
-  AppendHallways (x ': xs) y = x ': AppendHallways xs y
+$(singletons [d|
+  append :: [a] -> [a] -> [a]
+  append []     ys = ys
+  append (x:xs) ys = x : append xs ys
+  |])
 
 appendHallways
     :: Hallway ss
     -> Hallway ts
-    -> Hallway (AppendHallways ss ts)
-appendHallways HEnd t       = t
-appendHallways (d :<# ds) t = d :<# appendHallways ds t
-
-
-sAppendHallways :: Sing s
-                -> Sing t
-                -> Sing (AppendHallways s t)
-sAppendHallways SNil         st = st
-sAppendHallways (SCons x xs) st = SCons x (sAppendHallways xs st)
+    -> Hallway (Append ss ts)
+appendHallways = \case
+    HEnd     -> id
+    d :<# ds -> \es -> d :<# appendHallways ds es
 
 appendSomeHallways
     :: SomeHallway
     -> SomeHallway
     -> SomeHallway
-appendSomeHallways (ss :&:s) (st :&: t) 
-  = sAppendHallways ss st :&: appendHallways s t
-
+appendSomeHallways (ss :&: ds) (ts :&: es)
+      = sAppend ss ts
+    :&: appendHallways ds es
+    
 {-
 
 3. Can you use Sigma to define a door that must be knockable?
