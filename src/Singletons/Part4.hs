@@ -229,7 +229,7 @@ appendSomeHallways
 appendSomeHallways (ss :&: ds) (ts :&: es)
       = sAppend ss ts
     :&: appendHallways ds es
-    
+
 {-
 
 3. Can you use Sigma to define a door that must be knockable?
@@ -258,9 +258,29 @@ type SomeDoor = Sigma DoorState (TyCon1 Door)
 Hint: Try having KnockableDoor return a tuple.
 -}
 
-data KnockableDoor :: DoorState ~> Type
-type instance Apply KnockableDoor 'Closed = Door 'Closed
-type instance Apply KnockableDoor 'Locked = Door 'Locked
+-- Auto-promotion, Knockable
+$(singletons [d|
+  type KnockableDoor1 s = (Knockable s, Door s)
+  |])
 
-type SomeKnockableDoor = Sigma DoorState KnockableDoor
+type SomeKnockableDoor1 = Sigma DoorState KnockableDoor1Sym0
+
+-- Manual family, Knockable
+data KnockableDoor2 :: DoorState ~> Type
+type instance Apply KnockableDoor2 s = (Knockable s, Door s)
+
+type SomeKnockableDoor2 = Sigma DoorState KnockableDoor2
+
+-- Auto-promotion, via Pass
+$(singletons [d|
+  type KnockableDoor3 s = (StatePass s :~: 'Obstruct, Door s)
+  |])
+
+type SomeKnockableDoor3 = Sigma DoorState KnockableDoor3Sym0
+
+-- Manual family, via Pass
+data KnockableDoor4 :: DoorState ~> Type
+type instance Apply KnockableDoor4 s = (StatePass s :~: 'Obstruct, Door s)
+
+type SomeKnockableDoor4 = Sigma DoorState KnockableDoor4
 
