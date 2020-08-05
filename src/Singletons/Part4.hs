@@ -354,3 +354,26 @@ type IsOdd n = Sigma Nat (IsHalfOfMinusOne n)
 sevenIsOdd :: IsOdd 7
 sevenIsOdd = SNat @3 :&: Refl
 
+{-
+
+5. A common beginner Haskeller exercise is to implement map in terms of foldr:
+
+map :: (a -> b) -> [a] -> [b]
+map f = foldr ((:) . f) []
+
+Let’s do the same thing at the type level, manually.
+
+Directly implement a type-level Map, with kind (j ~> k) -> [j] -> [k], in 
+terms of Foldr:
+
+type Map f xs = Foldr ???? ???? xs
+
+Try to mirror the value-level definition, passing in (:) . f, and use the 
+promoted version of (.) from the singletons library, in Data.Singletons.Prelude. 
+You might find TyCon2 helpful!
+-}
+
+type Map f xs = Foldr (TyCon2 (:) .@#@$$$ f) NilSym0 xs
+
+-- type Map f xs = Foldr (TyCon2 (:) .@#@$$$ f) '[] xs
+
