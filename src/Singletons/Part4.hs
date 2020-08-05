@@ -377,3 +377,21 @@ type Map f xs = Foldr (TyCon2 (:) .@#@$$$ f) NilSym0 xs
 
 -- type Map f xs = Foldr (TyCon2 (:) .@#@$$$ f) '[] xs
 
+{-
+
+6. Make a SomeHallway from a list of SomeDoor:
+
+type SomeDoor = Sigma DoorState (TyCon1 Door)
+
+type SomeHallway = Sigma [DoorState] (TyCon1 Hallway)
+
+mkSomeHallway :: [SomeDoor] -> SomeHallway
+
+Remember that the singleton constructors for list are SNil (for []) and 
+SCons (for (:))!
+-}
+
+mkSomeHallway :: [SomeDoor] -> SomeHallway
+mkSomeHallway []               = SNil :&: HEnd
+mkSomeHallway ((s :&: d) : ds) = case mkSomeHallway ds of
+  ss :&: hw -> (s `SCons` ss) :&: (d :<# hw)
