@@ -26,7 +26,7 @@ import           Data.Singletons
 import           Data.Singletons.Prelude hiding    (And, Or, sFoldr, FoldrSym0, FoldrSym1, FoldrSym2, FoldrSym3, Foldr)
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH hiding         (sFoldr, FoldrSym0, FoldrSym1, FoldrSym2, FoldrSym3, Foldr, sFold, Fold)
-import           Data.Singletons.TypeLits()
+import           Data.Singletons.TypeLits
 
 $(singletons [d|
   data DoorState = Opened | Closed | Locked
@@ -283,4 +283,74 @@ data KnockableDoor4 :: DoorState ~> Type
 type instance Apply KnockableDoor4 s = (StatePass s :~: 'Obstruct, Door s)
 
 type SomeKnockableDoor4 = Sigma DoorState KnockableDoor4
+
+{-
+
+4. Take a look at the API of the Data.Singletons.TypeLits module, based on 
+the API exposed in GHC.TypeNats module from base.
+
+Using this, you can use Sigma to create a predicate that a given Nat number 
+is even:
+
+data IsHalfOf :: Nat -> Nat ~> Type
+type instance Apply (IsHalfOf n) m = n :~: (m * 2)
+
+type IsEven n = Sigma Nat (IsHalfOf n)
+
+(*) is multiplication from the Data.Singletons.Prelude.Num module. (You must 
+have the -XNoStarIsType extension on for this to work in GHC 8.6+), and :~: is 
+the predicate of equality from Part 3:
+
+data (:~:) :: k -> k -> Type where
+    Refl :: a :~: a
+
+(It’s only possible to make a value of type a :~: b using Refl :: a :~: a, so 
+it’s only possible to make a value of that type when a and b are equal. I like 
+to use Refl with type application syntax, like Refl @a, so it’s clear what we 
+are saying is the same on both sides; Refl @a :: a :~: a)
+
+The only way to construct an IsEven n is to provide a number m where m * 2 is n. 
+We can do this by using SNat @m, which is the singleton constructor for the Nat 
+kind (just like how STrue and SFalse are the singleton constructors for the Bool 
+kind):
+
+tenIsEven :: IsEven 10
+tenIsEven = SNat @5 :&: Refl @10
+    -- Refl is the constructor of type n :~: (m * 2)
+    -- here, we use it as Refl @10 :: 10 :~: 10
+
+-- won't compile
+sevenIsEven :: IsEven 10
+sevenIsEven = SNat @4 :&: Refl
+    -- won't compile, because we need something of type `(4 * 2) :~: 7`,
+    -- but Refl must have type `a :~: a`; `8 :~: 7` is not constructable
+    -- using `Refl`.  Neither `Refl @8` nor `Refl @7` will work.
+Write a similar type IsOdd n that can only be constructed if n is odd.
+
+type IsOdd n = Sigma Nat (???? n)
+And construct a proof that 7 is odd:
+
+sevenIsOdd :: IsOdd 7
+
+On a sad note, one exercise I’d like to be able to add is to ask you to 
+write decision functions and proofs for IsEven and IsOdd. Unfortunately, 
+Nat is not rich enough to support this out of the box without a lot of 
+extra tooling!
+-}
+
+data IsHalfOf :: Nat -> Nat ~> Type
+type instance Apply (IsHalfOf n) m = n :~: (m * 2)
+
+type IsEven n = Sigma Nat (IsHalfOf n)
+
+tenIsEven :: IsEven 10
+tenIsEven = SNat @5 :&: Refl
+
+data IsHalfOfMinusOne :: Nat -> Nat ~> Type
+type instance Apply (IsHalfOfMinusOne n) m = n - 1 :~: (m * 2)
+
+type IsOdd n = Sigma Nat (IsHalfOfMinusOne n)
+
+sevenIsOdd :: IsOdd 7
+sevenIsOdd = SNat @3 :&: Refl
 
