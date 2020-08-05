@@ -347,7 +347,7 @@ tenIsEven :: IsEven 10
 tenIsEven = SNat @5 :&: Refl
 
 data IsHalfOfMinusOne :: Nat -> Nat ~> Type
-type instance Apply (IsHalfOfMinusOne n) m = n - 1 :~: (m * 2)
+type instance Apply (IsHalfOfMinusOne n) m = n - 1 :~: m * 2
 
 type IsOdd n = Sigma Nat (IsHalfOfMinusOne n)
 
